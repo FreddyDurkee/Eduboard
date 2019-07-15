@@ -26,6 +26,10 @@
 
 #define BUTTON1 (1<<PD3)
 
+#define FOSC 1843200 // Clock Speed
+#define BAUD 115200
+#define MYUBRR FOSC/2/BAUD-1
+
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -33,6 +37,9 @@
 
 void leds_wave_blinking();
 void switch_on_leds();
+void USART_Transmit(unsigned char);
+void USART_Init_Transmission(unsigned int);
+
 
 int main(void)
 {
@@ -45,13 +52,15 @@ int main(void)
 	PORTB |= 0b00111100;
 	PORTD |= BUTTON1;
 	
+	USART_Init_Transmission(MYUBRR);
+	
 	sei();
     while (1) 
     {
+		USART_Transmit('t');
 		leds_wave_blinking();
     }
 }
-
 
 
 void leds_wave_blinking(){
@@ -66,6 +75,25 @@ void leds_wave_blinking(){
 void switch_on_leds(){
 	PORTB &= ~(LED1|LED2|LED3|LED4);
 }
+
+void USART_Transmit(unsigned char data)
+{
+	/* Wait for empty transmit buffer */
+	while (!(UCSR0A & (1<<UDRE0)));
+	UDR0 = data;
+	//UCSR0B |= 0b01000000;
+}
+
+void USART_Init_Transmission(unsigned int ubrr)
+{
+	/*Set baud rate */
+	UBRR0H = (unsigned char)(ubrr>>8);
+	UBRR0L = (unsigned char)ubrr;
+
+	UCSR0B = (1<<TXEN0);
+	/* Set frame format: 8data, 2stop bit */
+	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
+	}
 
 ISR(PCINT2_vect){
 	switch_on_leds();
