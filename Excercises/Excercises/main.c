@@ -34,6 +34,7 @@
 
 
 void leds_wave_blinking();
+void transmit_temperature_to_uart();
 void switch_on_leds();
 
 
@@ -48,9 +49,6 @@ int main(void)
 	
 	PORTB |= 0b00111100;
 	PORTD |= BUTTON1;
-
-	int i = 1;
-	float voltage;
 	
 	USART_Init_Transmission(__UBRR);
 	adc_init();
@@ -58,10 +56,7 @@ int main(void)
 	sei();
 	while (1)
 	{
-		voltage = get_8bit_voltage_value();
-		float celcius = voltage * 100;
-		USART_transmit_float(celcius,2);
-		USART_transmit_char('\n');
+		transmit_temperature_to_uart();
 		leds_wave_blinking();
 	}
 }
@@ -81,6 +76,13 @@ void leds_wave_blinking(){
 
 void switch_on_leds(){
 	PORTB &= ~(LED1|LED2|LED3|LED4);
+}
+
+void transmit_temperature_to_uart(){
+	float voltage = get_10bit_voltage_value(1);
+	float celsius = voltage * 100;
+	USART_transmit_float(celsius,2);
+	USART_transmit_char('\n');
 }
 
 

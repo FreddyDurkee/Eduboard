@@ -163,16 +163,9 @@
     <Compile Include="USART\uart.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="utils\arithmetics.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="utils\arithmetics.h">
-      <SubType>compile</SubType>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ADC" />
-    <Folder Include="utils" />
     <Folder Include="USART" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
