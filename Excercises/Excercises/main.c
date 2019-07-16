@@ -1,11 +1,11 @@
 /*
- * Excercises.c
- *
- * Created: 08.07.2019 18:54:00
- * Author : Dominika Wójcik
- */ 
+* Excercises.c
+*
+* Created: 08.07.2019 18:54:00
+* Author : Dominika Wójcik
+*/
 
-#define F_CPU   16000000UL
+#define F_CPU   16000000ul
 
 #define LED1 (1<<PB5)
 #define LED2 (1<<PB4)
@@ -26,41 +26,49 @@
 
 #define BUTTON1 (1<<PD3)
 
-#define FOSC 1843200 // Clock Speed
-#define BAUD 115200
 #define MYUBRR FOSC/2/BAUD-1
+#define UART_BAUD 9600
+#define __UBRR ((F_CPU+UART_BAUD*8UL) / (16UL*UART_BAUD)-1)
 
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include <stdlib.h>
 
 void leds_wave_blinking();
 void switch_on_leds();
-void USART_Transmit(unsigned char);
 void USART_Init_Transmission(unsigned int);
+void USART_transmit_char(char data);
+void USART_transmit_string(char *str);
 
 
 int main(void)
 {
 	PCICR |= (1<<PCIE2);
 	PCMSK2 |= (1<<PCINT19);
-		
+	
 	DDRB |= LED1|LED2|LED3|LED4;
 	DDRD |=  BUTTON1;
 	
 	PORTB |= 0b00111100;
 	PORTD |= BUTTON1;
+
+	unsigned int i = 2;
 	
-	USART_Init_Transmission(MYUBRR);
+	USART_Init_Transmission(__UBRR);
 	
 	sei();
-    while (1) 
-    {
-		USART_Transmit('t');
+	while (1)
+	{
+		char c[20];
+		itoa(i, c,10);
+		USART_transmit_string(c);
 		leds_wave_blinking();
-    }
+	}
 }
+
+
 
 
 void leds_wave_blinking(){
@@ -76,13 +84,22 @@ void switch_on_leds(){
 	PORTB &= ~(LED1|LED2|LED3|LED4);
 }
 
-void USART_Transmit(unsigned char data)
+void USART_transmit_string(char *str)
+{
+	while(*str){
+		USART_transmit_char(*str++);
+	}
+}
+
+
+void USART_transmit_char(char data)
 {
 	/* Wait for empty transmit buffer */
 	while (!(UCSR0A & (1<<UDRE0)));
 	UDR0 = data;
-	//UCSR0B |= 0b01000000;
 }
+
+
 
 void USART_Init_Transmission(unsigned int ubrr)
 {
@@ -91,12 +108,11 @@ void USART_Init_Transmission(unsigned int ubrr)
 	UBRR0L = (unsigned char)ubrr;
 
 	UCSR0B = (1<<TXEN0);
-	/* Set frame format: 8data, 2stop bit */
-	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
-	}
+	UCSR0C = (3<<UCSZ00);
+}
 
 ISR(PCINT2_vect){
 	switch_on_leds();
 }
-	
+
 
