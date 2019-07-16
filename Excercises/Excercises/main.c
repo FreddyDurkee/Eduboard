@@ -5,8 +5,6 @@
 * Author : Dominika Wójcik
 */
 
-#define F_CPU   16000000ul
-
 #define LED1 (1<<PB5)
 #define LED2 (1<<PB4)
 #define LED3 (1<<PB3)
@@ -26,21 +24,18 @@
 
 #define BUTTON1 (1<<PD3)
 
-#define MYUBRR FOSC/2/BAUD-1
-#define UART_BAUD 9600
-#define __UBRR ((F_CPU+UART_BAUD*8UL) / (16UL*UART_BAUD)-1)
-
+#include "USART/uart.h"
+#include "ADC/adc.h"
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
 
+
 void leds_wave_blinking();
 void switch_on_leds();
-void USART_Init_Transmission(unsigned int);
-void USART_transmit_char(char data);
-void USART_transmit_string(char *str);
+
 
 
 int main(void)
@@ -54,20 +49,22 @@ int main(void)
 	PORTB |= 0b00111100;
 	PORTD |= BUTTON1;
 
-	unsigned int i = 2;
+	int i = 1;
+	float voltage;
 	
 	USART_Init_Transmission(__UBRR);
+	adc_init();
 	
 	sei();
 	while (1)
 	{
-		char c[20];
-		itoa(i, c,10);
-		USART_transmit_string(c);
+		voltage = get_8bit_voltage_value();
+		float celcius = voltage * 100;
+		USART_transmit_float(celcius,2);
+		USART_transmit_char('\n');
 		leds_wave_blinking();
 	}
 }
-
 
 
 
@@ -80,36 +77,12 @@ void leds_wave_blinking(){
 		led = led*2;
 	}
 }
+
+
 void switch_on_leds(){
 	PORTB &= ~(LED1|LED2|LED3|LED4);
 }
 
-void USART_transmit_string(char *str)
-{
-	while(*str){
-		USART_transmit_char(*str++);
-	}
-}
-
-
-void USART_transmit_char(char data)
-{
-	/* Wait for empty transmit buffer */
-	while (!(UCSR0A & (1<<UDRE0)));
-	UDR0 = data;
-}
-
-
-
-void USART_Init_Transmission(unsigned int ubrr)
-{
-	/*Set baud rate */
-	UBRR0H = (unsigned char)(ubrr>>8);
-	UBRR0L = (unsigned char)ubrr;
-
-	UCSR0B = (1<<TXEN0);
-	UCSR0C = (3<<UCSZ00);
-}
 
 ISR(PCINT2_vect){
 	switch_on_leds();
